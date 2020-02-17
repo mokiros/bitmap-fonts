@@ -5,41 +5,53 @@
 
 -- Shared metatable for functions
 local mt = {
-	SetText = function(self,str,a)
+	SetText = function(self,str)
 		assert(type(str)=='string',('Invalid argument #1 (string expected, got %s)'):format(type(str)))
+		return self:SetFormattedText({str})
+	end,
+    SetFormattedText = function(self,t)
+        assert(type(t)=='table',('Invalid argument #1 (table expected, got %s)'):format(type(t)))
 		self.ImageLabels = {}
 		self.Frame:ClearAllChildren()
 		local LineHeight = self.Data.common.lineHeight
 		local base = self.Data.common.base
 		local Cursor = Vector2.new(0,0)
 		local chars = self.Data.char
+		local fullstr = ""
 		local prev
-		for position,codepoint in utf8.codes(str) do
-			if codepoint == 10 then
-				Cursor = Vector2.new(0,Cursor.Y+LineHeight)
+		for i,c in pairs(t) do
+			local str,clr
+			if type(c)=='table' then
+				str,clr = tostring(c[1]),c[2] or self.TextColor
 			else
-				local char = chars[codepoint] or chars[-1] or error('Invalid character: '..utf8.char(codepoint))
-				local il = Instance.new("ImageLabel")
-				il.BackgroundTransparency = 1
-				il.Size = UDim2.new(0,char.width,0,char.height)
-				local kerning = self.Data.kerning[codepoint]
-				kerning = (kerning and kerning.first == prev) and kerning.amount or 0
-				il.Position = UDim2.new(0,Cursor.X+char.xoffset+kerning,0,Cursor.Y+char.yoffset)
-				il.Image = self.Data.page[char.page].asset_url
-				il.ImageColor3 = self.TextColor
-				il.ImageRectOffset = Vector2.new(char.x,char.y)
-				il.ImageRectSize = Vector2.new(char.width,char.height)
-				il.Parent = self.Frame
-				table.insert(self.ImageLabels,il)
-				Cursor = Cursor + Vector2.new(char.xadvance,0)
+				str,clr = tostring(c),self.TextColor
 			end
-			prev = codepoint
+			fullstr = fullstr..str
+			for position,codepoint in utf8.codes(str) do
+				if codepoint == 10 then
+					Cursor = Vector2.new(0,Cursor.Y+LineHeight)
+				else
+					local char = chars[codepoint] or chars[-1] or error('Invalid character: '..utf8.char(codepoint))
+					local il = Instance.new("ImageLabel")
+					il.Name = position
+					il.BackgroundTransparency = 1
+					il.Size = UDim2.new(0,char.width,0,char.height)
+					local kerning = self.Data.kerning[codepoint]
+					kerning = (kerning and kerning.first == prev) and kerning.amount or 0
+					il.Position = UDim2.new(0,Cursor.X+char.xoffset+kerning,0,Cursor.Y+char.yoffset)
+					il.Image = self.Data.page[char.page].asset_url
+					il.ImageColor3 = clr
+					il.ImageRectOffset = Vector2.new(char.x,char.y)
+					il.ImageRectSize = Vector2.new(char.width,char.height)
+					il.Parent = self.Frame
+					table.insert(self.ImageLabels,il)
+					Cursor = Cursor + Vector2.new(char.xadvance,0)
+				end
+				prev = codepoint
+			end
 		end
-	end,
-    SetFormattedText = function(self,t)
-        assert(type(t)=='table',('Invalid argument #1 (table expected, got %s)'):format(type(t)))
-		self.ImageLabels = {}
-		self.Frame:ClearAllChildren()
+		self.Text = t
+		self.RawText = fullstr
 	end,
 	Update = function(self)
 		
