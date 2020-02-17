@@ -17,7 +17,8 @@ end
 -- File format addendum: The CustomFont module also expects 'asset_url' in 'page' tags in order to load the bitmap font image
 -- Example: page id=0 file="TestFont_0.png" asset_url="rbxassetid://1234567890"
 return function(str)
-	local Parsed = {char={},page={},kerning={}}
+    local Parsed = {char={},page={},kerning={}}
+    str = str:gsub('\r','');
 	local lines = split(str,'\n')
 	for _,line in pairs(lines) do
 		local t = split(line,' ')
